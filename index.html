@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SocialAuto - Gestión de Redes Sociales</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Iconos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <!-- Fuentes -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Librería para PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: { 50:'#eef7ff',100:'#d9edff',200:'#bce0ff',300:'#8ecdff',400:'#59b0ff',500:'#338dfc',600:'#1d6ef1',700:'#1558de',800:'#1847b4',900:'#193f8d',950:'#142754' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        *{scrollbar-width:thin;scrollbar-color:#1d6ef1 #1e293b}
+        ::-webkit-scrollbar{width:6px}
+        ::-webkit-scrollbar-track{background:#1e293b}
+        ::-webkit-scrollbar-thumb{background:#1d6ef1;border-radius:3px}
+        .gradient-bg{background:linear-gradient(135deg,#0f172a 0%,#1e293b 50%,#0f172a 100%)}
+        .glass{background:rgba(30,41,59,0.7);backdrop-filter:blur(20px);border:1px solid rgba(59,130,246,0.15)}
+        .glass-light{background:rgba(51,71,104,0.3);backdrop-filter:blur(10px);border:1px solid rgba(59,130,246,0.1)}
+        .sidebar-item{transition:all 0.3s cubic-bezier(0.4,0,0.2,1)}
+        .sidebar-item:hover{background:rgba(59,130,246,0.15);transform:translateX(4px)}
+        .sidebar-item.active{background:rgba(59,130,246,0.2);border-right:3px solid #3b82f6}
+        .card-hover{transition:all 0.3s cubic-bezier(0.4,0,0.2,1)}
+        .card-hover:hover{transform:translateY(-4px);box-shadow:0 20px 40px rgba(0,0,0,0.3)}
+        .pulse-dot{animation:pulse 2s infinite}
+        @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+        .slide-in{animation:slideIn 0.4s cubic-bezier(0.4,0,0.2,1)}
+        @keyframes slideIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+        .calendar-day{transition:all 0.2s ease}
+        .calendar-day:hover{background:rgba(59,130,246,0.2)}
+        .calendar-day.has-post{background:rgba(59,130,246,0.15)}
+        .tab-btn{transition:all 0.3s ease}
+        .tab-btn.active{background:#3b82f6;color:white}
+        input[type="file"]::file-selector-button{display:none}
+        .upload-zone{transition:all 0.3s ease}
+        .upload-zone.dragover{border-color:#3b82f6;background:rgba(59,130,246,0.1)}
+        .notification-toast{animation:toastIn 0.4s ease,toastOut 0.4s ease 3s forwards}
+        @keyframes toastIn{from{transform:translateX(100%);opacity:0}to{transform:translateX(0);opacity:1}}
+        @keyframes toastOut{from{transform:translateX(0);opacity:1}to{transform:translateX(100%);opacity:0}}
+        .yt-color{color:#FF0000}.ig-color{color:#E1306C}.fb-color{color:#1877F2}.tk-color{color:#00f2ea}
+        .yt-bg{background:#FF0000}.ig-bg{background:linear-gradient(45deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888)}
+        .fb-bg{background:#1877F2}.tk-bg{background:linear-gradient(45deg,#00f2ea,#ff0050)}
+        .chart-bar{transition:height 0.6s cubic-bezier(0.4,0,0.2,1)}
+        .report-card{transition:all 0.3s ease}
+        .report-card.selected{border-color:#3b82f6;background:rgba(59,130,246,0.1)}
+        @keyframes spin{to{transform:rotate(360deg)}}
+        .spinner{animation:spin 1s linear infinite}
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-white font-sans">
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="fixed left-0 top-0 h-full w-64 glass z-50 transform -translate-x-full lg:translate-x-0 transition-transform duration-300">
+        <div class="p-6">
+            <div class="flex items-center gap-3 mb-10">
+                <div class="w-10 h-10 rounded-xl bg-brand-600 flex items-center justify-center"><i class="fas fa-bolt text-lg"></i></div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-brand-400 to-purple-400 bg-clip-text text-transparent">SocialAuto</h1>
+                    <p class="text-[10px] text-slate-400 uppercase tracking-widest">Gestión de Redes</p>
+                </div>
+            </div>
+            <nav class="space-y-1">
+                <a href="#" onclick="showSection('dashboard')" class="sidebar-item active flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium" data-section="dashboard"><i class="fas fa-home w-5 text-center"></i> Inicio</a>
+                <a href="#" onclick="showSection('calendar')" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium" data-section="calendar"><i class="fas fa-calendar w-5 text-center"></i> Calendario</a>
+                <a href="#" onclick="showSection('create')" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium" data-section="create"><i class="fas fa-plus-circle w-5 text-center"></i> Crear</a>
+                <a href="#" onclick="showSection('queue')" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium" data-section="queue"><i class="fas fa-list w-5 text-center"></i> Publicaciones <span class="ml-auto bg-brand-600 text-xs px-2 py-0.5 rounded-full" id="queueCount">0</span></a>
+                <a href="#" onclick="showSection('reports')" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium" data-section="reports"><i class="fas fa-chart-bar w-5 text-center text-amber-400"></i> Informes</a>
+                <a href="#" onclick="showSection('accounts')" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium" data-section="accounts"><i class="fas fa-users w-5 text-center"></i> Cuentas</a>
+                <a href="#" onclick="showSection('settings')" class="sidebar-item flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium" data-section="settings"><i class="fas fa-cog w-5 text-center"></i> Ajustes</a>
+            </nav>
+        </div>
+        <div class="absolute bottom-0 left-0 right-0 p-6 border-t border-slate-700/50">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-brand-500 to-purple-600 flex items-center justify-center text-sm font-bold" id="userAvatar">SG</div>
+                <div class="flex-1 min-w-0"><p class="text-sm font-medium truncate" id="userName">Mi Cuenta</p><p class="text-xs text-slate-400">Gratis</p></div>
+                <button onclick="if(confirm('¿Borrar todos los datos?')){localStorage.clear();location.reload()}" class="text-slate-400 hover:text-red-400" title="Resetear"><i class="fas fa-trash"></i></button>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Mobile Toggle -->
+    <button id="sidebarToggle" onclick="toggleSidebar()" class="fixed top-4 left-4 z-50 lg:hidden w-10 h-10 rounded-xl glass flex items-center justify-center"><i class="fas fa-bars"></i></button>
+
+    <!-- Main Content -->
+    <main class="lg:ml-64 min-h-screen transition-all duration-300">
+        <header class="sticky top-0 z-40 glass border-b border-slate-700/30">
+            <div class="flex items-center justify-between px-6 py-4">
+                <div class="flex items-center gap-4 ml-12 lg:ml-0">
+                    <h2 id="pageTitle" class="text-xl font-semibold">Inicio</h2>
+                    <span class="hidden sm:inline-flex items-center gap-2 text-xs text-slate-400 bg-slate-800/50 px-3 py-1.5 rounded-full"><div class="w-2 h-2 rounded-full bg-green-400 pulse-dot"></div> Online</span>
+                </div>
+                <div class="flex items-center gap-3">
+                    <button onclick="showSection('create')" class="bg-brand-600 hover:bg-brand-700 px-4 py-2 rounded-xl text-sm font-medium flex items-center gap-2"><i class="fas fa-plus"></i><span class="hidden sm:inline">Nueva</span></button>
+                </div>
+            </div>
+        </header>
+
+        <div class="p-6">
+            <!-- DASHBOARD -->
+            <section id="section-dashboard" class="section-content">
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-8">
+                    <div class="glass rounded-2xl p-5 card-hover"><div class="flex items-center justify-between mb-4"><div class="w-12 h-12 rounded-xl bg-brand-600/20 flex items-center justify-center"><i class="fas fa-paper-plane text-brand-400 text-lg"></i></div></div><h3 class="text-2xl font-bold" id="statPosts">0</h3><p class="text-sm text-slate-400">Publicaciones</p></div>
+                    <div class="glass rounded-2xl p-5 card-hover"><div class="flex items-center justify-between mb-4"><div class="w-12 h-12 rounded-xl bg-green-600/20 flex items-center justify-center"><i class="fas fa-check text-green-400 text-lg"></i></div></div><h3 class="text-2xl font-bold" id="statPublished">0</h3><p class="text-sm text-slate-400">Publicadas</p></div>
+                    <div class="glass rounded-2xl p-5 card-hover"><div class="flex items-center justify-between mb-4"><div class="w-12 h-12 rounded-xl bg-amber-600/20 flex items-center justify-center"><i class="fas fa-clock text-amber-400 text-lg"></i></div></div><h3 class="text-2xl font-bold" id="statScheduled">0</h3><p class="text-sm text-slate-400">Programadas</p></div>
+                    <div class="glass rounded-2xl p-5 card-hover"><div class="flex items-center justify-between mb-4"><div class="w-12 h-12 rounded-xl bg-purple-600/20 flex items-center justify-center"><i class="fas fa-eye text-purple-400 text-lg"></i></div></div><h3 class="text-2xl font-bold" id="statReach">0</h3><p class="text-sm text-slate-400">Alcance Total</p></div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    <div class="glass rounded-2xl p-6">
+                        <h3 class="font-semibold text-lg mb-4">Actividad Reciente</h3>
+                        <div id="dashRecent"></div>
+                    </div>
+                    <div class="glass rounded-2xl p-6">
+                        <h3 class="font-semibold text-lg mb-4">Plataformas</h3>
+                        <div class="space-y-3" id="dashPlatforms"></div>
+                    </div>
+                </div>
+
+                <div class="glass rounded-2xl p-6">
+                    <h3 class="font-semibold text-lg mb-4">Rendimiento Semanal</h3>
+                    <div class="flex items-end gap-3 h-40" id="weekChart"></div>
+                    <div class="flex justify-between mt-2 px-2 text-xs text-slate-500"><span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span></div>
+                </div>
+            </section>
+
+            <!-- CALENDAR -->
+            <section id="section-calendar" class="section-content hidden">
+                <div class="glass rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <div class="flex items-center gap-3">
+                            <button onclick="changeMonth(-1)" class="w-9 h-9 rounded-xl glass-light flex items-center justify-center hover:bg-slate-700/50"><i class="fas fa-chevron-left"></i></button>
+                            <h3 id="calMonth" class="text-lg font-semibold"></h3>
+                            <button onclick="changeMonth(1)" class="w-9 h-9 rounded-xl glass-light flex items-center justify-center hover:bg-slate-700/50"><i class="fas fa-chevron-right"></i></button>
+                        </div>
+                        <button onclick="showSection('create')" class="bg-brand-600 hover:bg-brand-700 px-4 py-2 rounded-lg text-sm"><i class="fas fa-plus mr-2"></i>Nueva</button>
+                    </div>
+                    <div class="grid grid-cols-7 gap-px bg-slate-700/30 rounded-xl overflow-hidden" id="calGrid"></div>
+                </div>
+            </section>
+
+            <!-- CREATE -->
+            <section id="section-create" class="section-content hidden">
+                <div class="max-w-3xl mx-auto">
+                    <div class="glass rounded-2xl p-6">
+                        <h3 class="text-lg font-semibold mb-6">Nueva Publicación</h3>
+                        
+                        <div class="mb-6">
+                            <label class="block text-sm text-slate-300 mb-3">¿Dónde quieres publicar?</label>
+                            <div class="flex flex-wrap gap-3" id="platformSelector">
+                                <button onclick="togglePlat(this,'youtube')" class="px-4 py-2.5 rounded-xl border-2 border-slate-700 text-sm flex items-center gap-2"><i class="fab fa-youtube yt-color"></i> YouTube</button>
+                                <button onclick="togglePlat(this,'instagram')" class="px-4 py-2.5 rounded-xl border-2 border-slate-700 text-sm flex items-center gap-2"><i class="fab fa-instagram ig-color"></i> Instagram</button>
+                                <button onclick="togglePlat(this,'facebook')" class="px-4 py-2.5 rounded-xl border-2 border-slate-700 text-sm flex items-center gap-2"><i class="fab fa-facebook fb-color"></i> Facebook</button>
+                                <button onclick="togglePlat(this,'tiktok')" class="px-4 py-2.5 rounded-xl border-2 border-slate-700 text-sm flex items-center gap-2"><i class="fab fa-tiktok tk-color"></i> TikTok</button>
+                            </div>
+                        </div>
+
+                        <div class="mb-6">
+                            <label class="block text-sm text-slate-300 mb-2">Título</label>
+                            <input type="text" id="fTitle" class="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-sm focus:border-brand-500 focus:outline-none" placeholder="Ej: Video tutorial de cocina">
+                        </div>
+
+                        <div class="mb-6">
+                            <label class="block text-sm text-slate-300 mb-2">Contenido</label>
+                            <textarea id="fContent" rows="4" class="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-4 text-sm resize-none focus:border-brand-500 focus:outline-none" placeholder="Escribe el texto de tu publicación..."></textarea>
+                            <p class="text-xs text-slate-500 mt-1" id="charCnt">0 caracteres</p>
+                        </div>
+
+                        <div class="mb-6">
+                            <label class="block text-sm text-slate-300 mb-2">Imagen o Video (opcional)</label>
+                            <div id="uploadZone" class="upload-zone border-2 border-dashed border-slate-700 rounded-xl p-6 text-center cursor-pointer" onclick="document.getElementById('fFile').click()">
+                                <input type="file" id="fFile" multiple accept="image/*,video/*" class="hidden" onchange="handleFiles(this)">
+                                <i class="fas fa-cloud-upload-alt text-2xl text-slate-500 mb-2"></i>
+                                <p class="text-sm text-slate-400">Clic para subir archivos</p>
+                            </div>
+                            <div id="filePreview" class="flex flex-wrap gap-3 mt-3"></div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 mb-6">
+                            <div><label class="block text-sm text-slate-300 mb-2">Fecha</label><input type="date" id="fDate" class="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-sm focus:border-brand-500 focus:outline-none"></div>
+                            <div><label class="block text-sm text-slate-300 mb-2">Hora</label><input type="time" id="fTime" value="10:00" class="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-sm focus:border-brand-500 focus:outline-none"></div>
+                        </div>
+
+                        <div class="flex flex-wrap gap-3">
+                            <button onclick="savePost('published')" class="flex-1 bg-green-600 hover:bg-green-700 px-6 py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2"><i class="fas fa-check"></i> Publicar</button>
+                            <button onclick="savePost('scheduled')" class="flex-1 bg-brand-600 hover:bg-brand-700 px-6 py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2"><i class="fas fa-calendar"></i> Programar</button>
+                            <button onclick="savePost('draft')" class="px-6 py-3 rounded-xl border border-slate-600 hover:bg-slate-700 text-sm font-medium"><i class="fas fa-save mr-2"></i>Borrador</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- QUEUE -->
+            <section id="section-queue" class="section-content hidden">
+                <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+                    <h3 class="text-lg font-semibold">Todas las Publicaciones</h3>
+                    <div class="flex gap-2 flex-wrap">
+                        <button onclick="filterQ('all')" class="qf active px-3 py-1.5 rounded-lg text-xs bg-brand-600 text-white">Todas</button>
+                        <button onclick="filterQ('published')" class="qf px-3 py-1.5 rounded-lg text-xs bg-slate-800 text-slate-400">Publicadas</button>
+                        <button onclick="filterQ('scheduled')" class="qf px-3 py-1.5 rounded-lg text-xs bg-slate-800 text-slate-400">Programadas</button>
+                        <button onclick="filterQ('draft')" class="qf px-3 py-1.5 rounded-lg text-xs bg-slate-800 text-slate-400">Borradores</button>
+                    </div>
+                </div>
+                <div class="space-y-3" id="qList"></div>
+            </section>
+
+            <!-- REPORTS -->
+            <section id="section-reports" class="section-content hidden">
+                <div class="glass rounded-2xl p-6 mb-6">
+                    <h3 class="text-lg font-semibold mb-6"><i class="fas fa-chart-bar text-amber-400 mr-2"></i>Generar Informe</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                        <div onclick="selRep(this,'general')" class="report-card selected glass-light rounded-xl p-4 cursor-pointer border-2 border-brand-500"><i class="fas fa-chart-pie text-brand-400 text-xl mb-2"></i><h4 class="text-sm font-medium">General</h4></div>
+                        <div onclick="selRep(this,'platform')" class="report-card glass-light rounded-xl p-4 cursor-pointer border-2 border-transparent"><i class="fas fa-mobile-alt text-purple-400 text-xl mb-2"></i><h4 class="text-sm font-medium">Por Plataforma</h4></div>
+                        <div onclick="selRep(this,'posts')" class="report-card glass-light rounded-xl p-4 cursor-pointer border-2 border-transparent"><i class="fas fa-newspaper text-green-400 text-xl mb-2"></i><h4 class="text-sm font-medium">Por Post</h4></div>
+                        <div onclick="selRep(this,'export')" class="report-card glass-light rounded-xl p-4 cursor-pointer border-2 border-transparent"><i class="fas fa-download text-amber-400 text-xl mb-2"></i><h4 class="text-sm font-medium">Exportar</h4></div>
+                    </div>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+                        <div><label class="block text-xs text-slate-400 mb-1">Desde</label><input type="date" id="rStart" class="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-2.5 text-sm"></div>
+                        <div><label class="block text-xs text-slate-400 mb-1">Hasta</label><input type="date" id="rEnd" class="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-2.5 text-sm"></div>
+                        <div><label class="block text-xs text-slate-400 mb-1">Plataforma</label><select id="rPlat" class="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-2.5 text-sm"><option value="all">Todas</option><option value="youtube">YouTube</option><option value="instagram">Instagram</option><option value="facebook">Facebook</option><option value="tiktok">TikTok</option></select></div>
+                        <div><label class="block text-xs text-slate-400 mb-1">Formato</label><select id="rFormat" class="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-2.5 text-sm"><option value="pdf">PDF</option><option value="csv">CSV</option></select></div>
+                    </div>
+                    <div class="flex gap-2 mb-6 flex-wrap">
+                        <button onclick="quickRange('7d')" class="px-3 py-1.5 rounded-lg text-xs bg-slate-800 hover:bg-slate-700">7 días</button>
+                        <button onclick="quickRange('30d')" class="px-3 py-1.5 rounded-lg text-xs bg-slate-800 hover:bg-slate-700">30 días</button>
+                        <button onclick="quickRange('90d')" class="px-3 py-1.5 rounded-lg text-xs bg-slate-800 hover:bg-slate-700">90 días</button>
+                        <button onclick="quickRange('month')" class="px-3 py-1.5 rounded-lg text-xs bg-slate-800 hover:bg-slate-700">Este mes</button>
+                    </div>
+                    <button onclick="genReport()" id="genBtn" class="w-full bg-amber-600 hover:bg-amber-700 px-6 py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2"><i class="fas fa-chart-bar"></i> Generar Informe</button>
+                </div>
+                <div id="repResult" class="hidden glass rounded-2xl p-6">
+                    <div class="flex items-center justify-between mb-4"><h3 class="text-lg font-semibold">Resultado</h3><div class="flex gap-2"><button onclick="exportRep()" class="px-4 py-2 rounded-lg bg-brand-600 hover:bg-brand-700 text-sm"><i class="fas fa-download mr-2"></i>Descargar</button></div></div>
+                    <div id="repContent" class="bg-slate-900/50 rounded-xl p-6"></div>
+                </div>
+            </section>
+
+            <!-- ACCOUNTS -->
+            <section id="section-accounts" class="section-content hidden">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6" id="accGrid"></div>
+                <div class="glass rounded-2xl p-6">
+                    <h3 class="font-semibold text-lg mb-4">Conectar Cuenta Nueva</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <button onclick="addAccount('youtube')" class="p-4 rounded-xl border-2 border-dashed border-slate-700 hover:border-red-500/50 text-center"><i class="fab fa-youtube yt-color text-3xl mb-2"></i><p class="text-sm font-medium">YouTube</p></button>
+                        <button onclick="addAccount('instagram')" class="p-4 rounded-xl border-2 border-dashed border-slate-700 hover:border-pink-500/50 text-center"><i class="fab fa-instagram ig-color text-3xl mb-2"></i><p class="text-sm font-medium">Instagram</p></button>
+                        <button onclick="addAccount('facebook')" class="p-4 rounded-xl border-2 border-dashed border-slate-700 hover:border-blue-500/50 text-center"><i class="fab fa-facebook-f fb-color text-3xl mb-2"></i><p class="text-sm font-medium">Facebook</p></button>
+                        <button onclick="addAccount('tiktok')" class="p-4 rounded-xl border-2 border-dashed border-slate-700 hover:border-cyan-500/50 text-center"><i class="fab fa-tiktok tk-color text-3xl mb-2"></i><p class="text-sm font-medium">TikTok</p></button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- SETTINGS -->
+            <section id="section-settings" class="section-content hidden">
+                <div class="max-w-2xl mx-auto space-y-6">
+                    <div class="glass rounded-2xl p-6">
+                        <h3 class="text-lg font-semibold mb-6">Ajustes</h3>
+                        <div class="space-y-4">
+                            <div><label class="block text-sm text-slate-300 mb-2">Tu Nombre</label><input type="text" id="sName" class="w-full bg-slate-800/50 border border-slate-700 rounded-xl p-3 text-sm focus:border-brand-500 focus:outline-none"></div>
+                            <div class="flex items-center justify-between p-4 rounded-xl bg-slate-800/30"><div><p class="text-sm font-medium">Modo Oscuro</p><p class="text-xs text-slate-400">Siempre activo</p></div><div class="w-11 h-6 bg-brand-600 rounded-full"></div></div>
+                        </div>
+                    </div>
+                    <div class="glass rounded-2xl p-6">
+                        <h3 class="text-lg font-semibold mb-4">Tus Datos</h3>
+                        <div class="flex flex-wrap gap-3">
+                            <button onclick="exportData()" class="px-6 py-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-sm"><i class="fas fa-download mr-2"></i>Descargar Backup</button>
+                            <button onclick="document.getElementById('impFile').click()" class="px-6 py-3 rounded-xl border border-slate-600 hover:bg-slate-700 text-sm"><i class="fas fa-upload mr-2"></i>Importar Backup</button>
+                            <input type="file" id="impFile" accept=".json" class="hidden" onchange="importData(this)">
+                        </div>
+                    </div>
+                    <button onclick="saveSettings()" class="w-full bg-brand-600 hover:bg-brand-700 py-3 rounded-xl text-sm font-medium">Guardar</button>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Toasts -->
+    <div id="toastBox" class="fixed bottom-4 right-4 z-[70] space-y-2"></div>
+
+    <script>
+        // === BASE DE DATOS (LOCALSTORAGE) ===
+        const DB={
+            get(k,d=[]){try{return JSON.parse(localStorage.getItem('sa_'+k))||d}catch(e){return d}},
+            set(k,v){localStorage.setItem('sa_'+k,JSON.stringify(v))}
+        };
+        
+        let curMonth=new Date().getMonth(), curYear=new Date().getFullYear();
+        let selPlats=new Set(), upFiles=[];
+        let selRepType='general';
+
+        // === INICIALIZACIÓN ===
+        document.addEventListener('DOMContentLoaded',()=>{
+            const t=new Date();
+            document.getElementById('fDate').value=t.toISOString().split('T')[0];
+            quickRange('30d');
+            loadSettings();
+            render();
+            // Eventos
+            document.getElementById('fContent').addEventListener('input',function(){
+                document.getElementById('charCnt').textContent=this.value.length+' caracteres';
+            });
+            setupDrop();
+        });
+
+        function render(){renderDash();renderCal();renderQ();renderAcc();loadSettings();}
+
+        // === NAVEGACIÓN ===
+        function showSection(s){
+            document.querySelectorAll('.section-content').forEach(e=>e.classList.add('hidden'));
+            document.getElementById('section-'+s).classList.remove('hidden');
+            document.querySelectorAll('.sidebar-item').forEach(e=>e.classList.remove('active'));
+            const link = document.querySelector(`[data-section="${s}"]`);
+            if(link) link.classList.add('active');
+            
+            const t={dashboard:'Inicio',calendar:'Calendario',create:'Crear Publicación',queue:'Publicaciones',reports:'Informes',accounts:'Cuentas',settings:'Ajustes'};
+            document.getElementById('pageTitle').textContent=t[s]||s;
+            if(window.innerWidth<1024)document.getElementById('sidebar').classList.add('-translate-x-full');
+            render();
+        }
+        function toggleSidebar(){document.getElementById('sidebar').classList.toggle('-translate-x-full');}
+
+        // === DASHBOARD ===
+        function renderDash(){
+            const posts=DB.get('posts',[]);
+            const pub=posts.filter(p=>p.status==='published');
+            const sch=posts.filter(p=>p.status==='scheduled');
+            const reach=pub.reduce((s,p)=>s+(p.reach||0),0);
+            document.getElementById('statPosts').textContent=posts.length;
+            document.getElementById('statPublished').textContent=pub.length;
+            document.getElementById('statScheduled').textContent=sch.length;
+            document.getElementById('statReach').textContent=fmtN(reach);
+            document.getElementById('queueCount').textContent=sch.length;
+
+            // Gráfico Semanal
+            const dd=[0,0,0,0,0,0,0];const td=new Date();
+            pub.forEach(p=>{
+                if(p.date){
+                    const d=new Date(p.date);
+                    const diff=Math.floor((td-d)/864e5); // Diferencia en días
+                    // Ajuste simple para que el día actual sea el último
+                    if(diff>=0 && diff<7) {
+                        // 0 es hoy, 6 es hace 7 días. Invertimos para que el gráfico muestre cronología?
+                        // dd[0] = hoy. Para gráfico izquierda->derecha, invertimos índices
+                        const idx = 6 - diff; 
+                        if(idx >= 0 && idx < 7) dd[idx]++;
+                    }
+                }
+            });
+            
+            const mx=Math.max(...dd,1);
+            document.getElementById('weekChart').innerHTML=dd.map(v=>`<div class="flex-1 flex flex-col items-center"><div class="w-full bg-brand-600 rounded-t chart-bar hover:bg-brand-500" style="height:${(v/mx)*100}%"></div><span class="text-[10px] text-slate-500 mt-1">${v}</span></div>`).join('');
+
+            // Actividad Reciente
+            const rec=posts.slice(-5).reverse();
+            document.getElementById('dashRecent').innerHTML=rec.length?rec.map(p=>{
+                const sc={published:'text-green-400 bg-green-400/10',scheduled:'text-amber-400 bg-amber-400/10',draft:'text-slate-400 bg-slate-400/10'};
+                const sn={published:'✓ Publicada',scheduled:'⏰ Programada',draft:'📝 Borrador'};
+                return `<div class="flex items-center gap-3 p-3 rounded-xl bg-slate-800/20"><div class="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center"><i class="fas ${p.type==='video'?'fa-video text-brand-400':'fa-image text-purple-400'} text-xs"></i></div><div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">${p.title||'Sin título'}</p><p class="text-xs text-slate-400">${p.platforms.map(x=>x.charAt(0).toUpperCase()+x.slice(1)).join(', ')} ${p.date?'• '+p.date:''}</p></div><span class="text-xs px-2 py-1 rounded-full whitespace-nowrap ${sc[p.status]}">${sn[p.status]}</span></div>`;
+            }).join(''):'<p class="text-sm text-slate-500 text-center py-4">Sin publicaciones aún</p>';
+
+            // Plataformas
+            const plats=['youtube','instagram','facebook','tiktok'];
+            const pn={youtube:'YouTube',instagram:'Instagram',facebook:'Facebook',tiktok:'TikTok'};
+            const pi={youtube:'fab fa-youtube',instagram:'fab fa-instagram',facebook:'fab fa-facebook-f',tiktok:'fab fa-tiktok'};
+            const pc={youtube:'yt-color',instagram:'ig-color',facebook:'fb-color',tiktok:'tk-color'};
+            const accs=DB.get('accounts',[]);
+            document.getElementById('dashPlatforms').innerHTML=plats.map(pl=>{
+                const c=accs.find(a=>a.platform===pl);
+                const ct=posts.filter(p=>p.platforms.includes(pl)).length;
+                return `<div class="flex items-center justify-between p-3 rounded-xl bg-slate-800/30"><div class="flex items-center gap-3"><i class="${pi[pl]} ${pc[pl]} text-lg"></i><span class="text-sm">${pn[pl]}</span></div><div class="flex items-center gap-2"><span class="text-xs text-slate-400">${ct} posts</span>${c?'<div class="w-2 h-2 rounded-full bg-green-400"></div>':'<div class="w-2 h-2 rounded-full bg-slate-600"></div>'}</div></div>`;
+            }).join('');
+        }
+
+        // === CALENDARIO ===
+        function renderCal(){
+            const g=document.getElementById('calGrid');
+            const ms=['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+            document.getElementById('calMonth').textContent=`${ms[curMonth]} ${curYear}`;
+            let h='';
+            ['Lun','Mar','Mié','Jue','Vie','Sáb','Dom'].forEach(d=>h+=`<div class="p-3 text-center text-xs font-medium text-slate-400 bg-slate-800/50">${d}</div>`);
+            const fd=new Date(curYear,curMonth,1);let sd=fd.getDay()-1;if(sd<0)sd=6;
+            const dim=new Date(curYear,curMonth+1,0).getDate();
+            const posts=DB.get('posts',[]);
+            for(let i=0;i<sd;i++)h+=`<div class="p-3 min-h-[80px] bg-slate-900/30"></div>`;
+            for(let d=1;d<=dim;d++){
+                const dp=posts.filter(p=>{if(!p.date)return false;const x=new Date(p.date);return x.getDate()===d&&x.getMonth()===curMonth&&x.getFullYear()===curYear;});
+                let dots='';
+                dp.forEach(p=>{
+                    if(p.platforms.includes('youtube'))dots+=`<div class="w-1.5 h-1.5 rounded-full bg-red-500"></div>`;
+                    if(p.platforms.includes('instagram'))dots+=`<div class="w-1.5 h-1.5 rounded-full bg-pink-500"></div>`;
+                    if(p.platforms.includes('facebook'))dots+=`<div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>`;
+                    if(p.platforms.includes('tiktok'))dots+=`<div class="w-1.5 h-1.5 rounded-full bg-cyan-400"></div>`;
+                });
+                h+=`<div class="calendar-day p-2 min-h-[80px] cursor-pointer ${dp.length?'has-post':''}" onclick="showSection('create')"><span class="text-sm text-slate-300">${d}</span><div class="flex gap-0.5 mt-1 flex-wrap">${dots}</div></div>`;
+            }
+            g.innerHTML=h;
+        }
+        function changeMonth(dir){curMonth+=dir;if(curMonth>11){curMonth=0;curYear++;}if(curMonth<0){curMonth=11;curYear--;}renderCal();}
+
+        // === CREAR POST ===
+        function togglePlat(btn,plat){
+            if(selPlats.has(plat)){selPlats.delete(plat);btn.classList.remove('ring-2','ring-brand-500','bg-slate-800');}
+            else{selPlats.add(plat);btn.classList.add('ring-2','ring-brand-500','bg-slate-800');}
+        }
+        function handleFiles(inp){
+            const files=Array.from(inp.files);
+            files.forEach(f=>{
+                const r=new FileReader();
+                r.onload=e=>{
+                    upFiles.push({name:f.name,data:e.target.result,type:f.type});
+                    const c=document.getElementById('filePreview');
+                    const d=document.createElement('div');
+                    d.className='relative w-20 h-20 rounded-xl overflow-hidden border border-slate-700';
+                    if(f.type.startsWith('image/'))d.innerHTML=`<img src="${e.target.result}" class="w-full h-full object-cover"><button onclick="this.parentElement.remove()" class="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-500 text-[10px] flex items-center justify-center">×</button>`;
+                    else d.innerHTML=`<div class="w-full h-full bg-slate-800 flex items-center justify-center"><i class="fas fa-video text-brand-400"></i></div><button onclick="this.parentElement.remove()" class="absolute top-1 right-1 w-5 h-5 rounded-full bg-red-500 text-[10px] flex items-center justify-center">×</button>`;
+                    c.appendChild(d);
+                };
+                r.readAsDataURL(f);
+            });
+        }
+        function setupDrop(){
+            const z=document.getElementById('uploadZone');
+            z.addEventListener('dragover',e=>{e.preventDefault();z.classList.add('dragover');});
+            z.addEventListener('dragleave',()=>z.classList.remove('dragover'));
+            z.addEventListener('drop',e=>{e.preventDefault();z.classList.remove('dragover');document.getElementById('fFile').files=e.dataTransfer.files;handleFiles(document.getElementById('fFile'));});
+        }
+        function savePost(status){
+            if(selPlats.size===0){toast('Selecciona al menos una plataforma','warning');return;}
+            const c=document.getElementById('fContent').value;
+            const t=document.getElementById('fTitle').value;
+            if(!c&&!t){toast('Escribe contenido o título','warning');return;}
+            const post={
+                id:Date.now(),title:t||c.substring(0,50),content:c,
+                platforms:Array.from(selPlats),
+                date:document.getElementById('fDate').value,
+                time:document.getElementById('fTime').value,
+                status,type:upFiles.some(f=>f.type.includes('video'))?'video':'image',
+                media:upFiles.map(f=>f.name),
+                reach:Math.floor(Math.random()*5000)+500,
+                interactions:Math.floor(Math.random()*500)+50,
+                engagement:(Math.random()*8+1).toFixed(1),
+                created_at:new Date().toISOString()
+            };
+            const posts=DB.get('posts',[]);posts.push(post);DB.set('posts',posts);
+            document.getElementById('fContent').value='';document.getElementById('fTitle').value='';
+            document.getElementById('filePreview').innerHTML='';upFiles=[];
+            selPlats.clear();
+            // Limpiar selección visual
+            document.querySelectorAll('#platformSelector button').forEach(b=>b.classList.remove('ring-2','ring-brand-500','bg-slate-800'));
+            
+            document.getElementById('charCnt').textContent='0 caracteres';
+            toast(status==='published'?'✅ Publicada':status==='scheduled'?'⏰ Programada':'📝 Borrador guardado','success');
+            render();
+        }
+
+        // === COLA / PUBLICACIONES ===
+        function renderQ(filter='all'){
+            const l=document.getElementById('qList');
+            let posts=DB.get('posts',[]);
+            if(filter!=='all')posts=posts.filter(p=>p.status===filter);
+            const pi={youtube:'<i class="fab fa-youtube yt-color"></i>',instagram:'<i class="fab fa-instagram ig-color"></i>',facebook:'<i class="fab fa-facebook fb-color"></i>',tiktok:'<i class="fab fa-tiktok tk-color"></i>'};
+            const si={scheduled:{t:'⏰ Programada',c:'text-amber-400 bg-amber-400/10'},draft:{t:'📝 Borrador',c:'text-slate-400 bg-slate-400/10'},published:{t:'✓ Publicada',c:'text-green-400 bg-green-400/10'}};
+            l.innerHTML=posts.slice().reverse().map(p=>`
+                <div class="glass rounded-xl p-4 slide-in"><div class="flex items-start justify-between">
+                    <div class="flex items-start gap-3 flex-1">
+                        <div class="w-10 h-10 rounded-lg bg-slate-800 flex items-center justify-center flex-shrink-0">${p.type==='video'?'<i class="fas fa-video text-brand-400"></i>':'<i class="fas fa-image text-purple-400"></i>'}</div>
+                        <div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">${p.title||'Sin título'}</p><div class="flex items-center gap-2 mt-1">${p.platforms.map(pl=>pi[pl]).join('')}${p.date?`<span class="text-xs text-slate-400">• ${p.date} ${p.time||''}</span>`:''}</div></div>
+                    </div>
+                    <div class="flex items-center gap-2 flex-wrap justify-end">
+                        <span class="text-xs px-2 py-1 rounded-full whitespace-nowrap ${si[p.status].c}">${si[p.status].t}</span>
+                        <select onchange="changeStatus(${p.id},this.value)" class="bg-slate-800 border border-slate-700 rounded-lg text-xs px-2 py-1"><option value="draft" ${p.status==='draft'?'selected':''}>Borrador</option><option value="scheduled" ${p.status==='scheduled'?'selected':''}>Programada</option><option value="published" ${p.status==='published'?'selected':''}>Publicada</option></select>
+                        <button onclick="delPost(${p.id})" class="text-slate-500 hover:text-red-400 p-1"><i class="fas fa-trash text-xs"></i></button>
+                    </div>
+                </div></div>
+            `).join('')||'<p class="text-sm text-slate-500 text-center py-8">Sin publicaciones</p>';
+        }
+        function filterQ(f){
+            document.querySelectorAll('.qf').forEach(b=>{b.classList.remove('active','bg-brand-600','text-white');b.classList.add('bg-slate-800','text-slate-400');});
+            event.target.classList.add('active','bg-brand-600','text-white');event.target.classList.remove('bg-slate-800','text-slate-400');
+            renderQ(f);
+        }
+        function delPost(id){if(!confirm('¿Eliminar?'))return;const posts=DB.get('posts',[]).filter(p=>p.id!==id);DB.set('posts',posts);toast('Eliminada','info');render();}
+        function changeStatus(id,status){const posts=DB.get('posts',[]);const idx=posts.findIndex(p=>p.id===id);if(idx>=0){posts[idx].status=status;DB.set('posts',posts);toast('Estado actualizado','success');render();}}
+
+        // === INFORMES ===
+        function selRep(el,type){
+            document.querySelectorAll('.report-card').forEach(c=>{c.classList.remove('selected','border-brand-500');c.classList.add('border-transparent');});
+            el.classList.add('selected','border-brand-500');el.classList.remove('border-transparent');
+            selRepType=type;
+        }
+        function quickRange(r){
+            const t=new Date();let s;
+            switch(r){case'7d':s=new Date(t);s.setDate(t.getDate()-7);break;case'30d':s=new Date(t);s.setDate(t.getDate()-30);break;case'90d':s=new Date(t);s.setDate(t.getDate()-90);break;case'month':s=new Date(t.getFullYear(),t.getMonth(),1);break;}
+            document.getElementById('rStart').value=s.toISOString().split('T')[0];
+            document.getElementById('rEnd').value=t.toISOString().split('T')[0];
+        }
+        function genReport(){
+            const s=document.getElementById('rStart').value;
+            const e=document.getElementById('rEnd').value;
+            const pl=document.getElementById('rPlat').value;
+            if(!s||!e){toast('Selecciona fechas','warning');return;}
+            const btn=document.getElementById('genBtn');btn.innerHTML='<i class="fas fa-spinner spinner"></i> Generando...';btn.disabled=true;
+            setTimeout(()=>{
+                let posts=DB.get('posts',[]).filter(p=>p.date&&p.date>=s&&p.date<=e);
+                if(pl!=='all')posts=posts.filter(p=>p.platforms.includes(pl));
+                const pub=posts.filter(p=>p.status==='published');
+                const tr=pub.reduce((s,p)=>s+(p.reach||0),0);
+                const ti=pub.reduce((s,p)=>s+(p.interactions||0),0);
+                const ae=pub.length?(pub.reduce((s,p)=>s+parseFloat(p.engagement||0),0)/pub.length).toFixed(1):'0';
+                const pn={youtube:'YouTube',instagram:'Instagram',facebook:'Facebook',tiktok:'TikTok'};
+                const pi={youtube:'fab fa-youtube',instagram:'fab fa-instagram',facebook:'fab fa-facebook-f',tiktok:'fab fa-tiktok'};
+                const pc={youtube:'yt-color',instagram:'ig-color',facebook:'fb-color',tiktok:'tk-color'};
+                const plats=pl==='all'?['youtube','instagram','facebook','tiktok']:[pl];
+                const accs=DB.get('accounts',[]);
+                
+                let tr2='';plats.forEach(p=>{
+                    const pp=pub.filter(x=>x.platforms.includes(p));
+                    const pr=pp.reduce((s,x)=>s+(x.reach||0),0);
+                    const pi2=pp.reduce((s,x)=>s+(x.interactions||0),0);
+                    const pe=pp.length?(pp.reduce((s,x)=>s+parseFloat(x.engagement||0),0)/pp.length).toFixed(1):'0';
+                    const fl=accs.find(a=>a.platform===p)?.followers||'--';
+                    tr2+=`<tr class="border-b border-slate-800/50"><td class="py-3 px-3"><span class="flex items-center gap-2"><i class="${pi[p]} ${pc[p]}"></i> ${pn[p]}</span></td><td class="py-3 px-3">${pp.length}</td><td class="py-3 px-3 font-medium">${fmtN(pr)}</td><td class="py-3 px-3">${fmtN(pi2)}</td><td class="py-3 px-3">${pe}%</td><td class="py-3 px-3">${fl}</td></tr>`;
+                });
+                
+                const top=pub.sort((a,b)=>(b.reach||0)-(a.reach||0)).slice(0,5);
+                let tr3=top.map((p,i)=>`<div class="flex items-center gap-3 p-3 rounded-xl bg-slate-800/20"><span class="text-lg font-bold text-slate-500 w-8 text-center">#${i+1}</span><div class="flex-1 min-w-0"><p class="text-sm font-medium truncate">${p.title||''}</p><p class="text-xs text-slate-500">${p.platforms.map(x=>pn[x]).join(', ')} • ${p.date}</p></div><div class="text-right"><p class="text-sm font-bold text-brand-400">${fmtN(p.reach||0)}</p><p class="text-xs text-slate-400">alcance</p></div></div>`).join('');
+
+                document.getElementById('repContent').innerHTML=`
+                    <div class="border-b border-slate-700 pb-4 mb-6"><div class="flex justify-between"><div><h2 class="text-xl font-bold">Informe de Redes Sociales</h2><p class="text-sm text-slate-400 mt-1">SocialAuto</p></div><div class="text-right"><p class="text-xs text-slate-400">${new Date().toLocaleString('es-ES')}</p><p class="text-xs text-slate-400">${fmtD(s)} - ${fmtD(e)}</p></div></div></div>
+                    <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+                        <div class="glass-light rounded-xl p-3 text-center"><p class="text-2xl font-bold text-brand-400">${posts.length}</p><p class="text-xs text-slate-400">Posts</p></div>
+                        <div class="glass-light rounded-xl p-3 text-center"><p class="text-2xl font-bold text-purple-400">${fmtN(tr)}</p><p class="text-xs text-slate-400">Alcance</p></div>
+                        <div class="glass-light rounded-xl p-3 text-center"><p class="text-2xl font-bold text-pink-400">${fmtN(ti)}</p><p class="text-xs text-slate-400">Interacciones</p></div>
+                        <div class="glass-light rounded-xl p-3 text-center"><p class="text-2xl font-bold text-amber-400">${ae}%</p><p class="text-xs text-slate-400">Engagement</p></div>
+                        <div class="glass-light rounded-xl p-3 text-center"><p class="text-2xl font-bold text-green-400">${pub.length}</p><p class="text-xs text-slate-400">Publicadas</p></div>
+                    </div>
+                    <div class="mb-6"><h4 class="text-sm font-semibold text-slate-300 mb-3">Por Plataforma</h4><div class="overflow-x-auto"><table class="w-full text-sm"><thead><tr class="border-b border-slate-700"><th class="text-left py-3 px-3 text-slate-400 text-xs">Plataforma</th><th class="text-left py-3 px-3 text-slate-400 text-xs">Posts</th><th class="text-left py-3 px-3 text-slate-400 text-xs">Alcance</th><th class="text-left py-3 px-3 text-slate-400 text-xs">Interacciones</th><th class="text-left py-3 px-3 text-slate-400 text-xs">Engagement</th><th class="text-left py-3 px-3 text-slate-400 text-xs">Seguidores</th></tr></thead><tbody>${tr2}</tbody></table></div></div>
+                    <div><h4 class="text-sm font-semibold text-slate-300 mb-3">Top Posts</h4>${tr3||'<p class="text-sm text-slate-500 text-center py-4">Sin datos</p>'}</div>
+                `;
+                document.getElementById('repResult').classList.remove('hidden');
+                btn.innerHTML='<i class="fas fa-chart-bar"></i> Generar Informe';btn.disabled=false;
+                toast('Informe generado','success');
+            },600);
+        }
+        function exportRep(){
+            const fmt=document.getElementById('rFormat').value;
+            if(fmt==='csv'){
+                const s=document.getElementById('rStart').value;const e=document.getElementById('rEnd').value;const pl=document.getElementById('rPlat').value;
+                let posts=DB.get('posts',[]).filter(p=>p.date&&p.date>=s&&p.date<=e);
+                if(pl!=='all')posts=posts.filter(p=>p.platforms.includes(pl));
+                const pn={youtube:'YouTube',instagram:'Instagram',facebook:'Facebook',tiktok:'TikTok'};
+                let csv='Título,Plataformas,Fecha,Hora,Tipo,Alcance,Interacciones,Engagement,Estado\n';
+                posts.forEach(p=>{csv+=`"${p.title||''}","${p.platforms.map(x=>pn[x]).join('; ')}","${p.date}","${p.time||''}","${p.type}",${p.reach||0},${p.interactions||0},${p.engagement||0},"${p.status}"\n`;});
+                const blob=new Blob(['\ufeff'+csv],{type:'text/csv'});const l=document.createElement('a');l.href=URL.createObjectURL(blob);l.download=`informe-${s}.csv`;l.click();
+                toast('CSV descargado','success');
+            } else {
+                try{
+                    const{jsPDF}=window.jspdf;const doc=new jsPDF();
+                    doc.setFillColor(15,23,42);doc.rect(0,0,210,40,'F');doc.setTextColor(255,255,255);doc.setFontSize(20);doc.text('SocialAuto - Informe',15,18);
+                    doc.setFontSize(10);doc.text(`Generado: ${new Date().toLocaleString('es-ES')}`,15,28);doc.text(`Período: ${document.getElementById('rStart').value} a ${document.getElementById('rEnd').value}`,15,34);
+                    const s=document.getElementById('rStart').value;const e=document.getElementById('rEnd').value;const pl=document.getElementById('rPlat').value;
+                    let posts=DB.get('posts',[]).filter(p=>p.date&&p.date>=s&&p.date<=e);if(pl!=='all')posts=posts.filter(p=>p.platforms.includes(pl));
+                    const pub=posts.filter(p=>p.status==='published');const pn={youtube:'YouTube',instagram:'Instagram',facebook:'Facebook',tiktok:'TikTok'};
+                    const plats=pl==='all'?['youtube','instagram','facebook','tiktok']:[pl];
+                    const td=plats.map(p=>{const pp=pub.filter(x=>x.platforms.includes(p));return[pn[p],pp.length,fmtN(pp.reduce((s,x)=>s+(x.reach||0),0)),fmtN(pp.reduce((s,x)=>s+(x.interactions||0),0)),(pp.length?(pp.reduce((s,x)=>s+parseFloat(x.engagement||0),0)/pp.length).toFixed(1):'0')+'%'];});
+                    doc.setTextColor(30,41,59);doc.setFontSize(14);doc.text('Resumen',15,55);
+                    doc.autoTable({startY:62,head:[['Plataforma','Posts','Alcance','Interacciones','Engagement']],body:td,theme:'grid',headStyles:{fillColor:[29,110,241],textColor:255},styles:{fontSize:9}});
+                    doc.save(`informe-${s}.pdf`);toast('PDF descargado','success');
+                }catch(err){toast('Error al generar PDF','error');}
+            }
+        }
+
+        // === CUENTAS ===
+        function renderAcc(){
+            const accs=DB.get('accounts',[]);
+            const plats=[{id:'youtube',n:'YouTube',i:'fab fa-youtube',bg:'yt-bg'},{id:'instagram',n:'Instagram',i:'fab fa-instagram',bg:'ig-bg'},{id:'facebook',n:'Facebook',i:'fab fa-facebook-f',bg:'fb-bg'},{id:'tiktok',n:'TikTok',i:'fab fa-tiktok',bg:'tk-bg'}];
+            const posts=DB.get('posts',[]);
+            document.getElementById('accGrid').innerHTML=plats.map(pl=>{
+                const a=accs.find(x=>x.platform===pl.id);const pp=posts.filter(p=>p.platforms.includes(pl.id));const pub=pp.filter(p=>p.status==='published');
+                return `<div class="glass rounded-2xl p-6 card-hover"><div class="flex items-start justify-between mb-4"><div class="flex items-center gap-3"><div class="w-14 h-14 rounded-xl ${pl.bg} flex items-center justify-center"><i class="${pl.i} text-white text-2xl"></i></div><div><h4 class="font-semibold">${pl.n}</h4><p class="text-sm text-slate-400">${a?.name||'No conectada'}</p></div></div>${a?'<span class="text-xs text-green-400 bg-green-400/10 px-2 py-1 rounded-full">✓ Conectada</span>':''}</div>
+                <div class="grid grid-cols-3 gap-3 mb-4"><div class="text-center p-2 rounded-lg bg-slate-800/30"><p class="text-lg font-bold">${a?.followers||'--'}</p><p class="text-xs text-slate-400">Seguidores</p></div><div class="text-center p-2 rounded-lg bg-slate-800/30"><p class="text-lg font-bold">${pp.length}</p><p class="text-xs text-slate-400">Posts</p></div><div class="text-center p-2 rounded-lg bg-slate-800/30"><p class="text-lg font-bold">${pub.length}</p><p class="text-xs text-slate-400">Publicadas</p></div></div>
+                ${a?`<button onclick="delAcc('${pl.id}')" class="w-full py-2 rounded-lg bg-red-600/20 text-red-400 border border-red-600/30 text-sm">Desconectar</button>`:`<button onclick="addAccount('${pl.id}')" class="w-full py-2 rounded-lg border border-slate-700 text-sm hover:bg-slate-700">Conectar</button>`}</div>`;
+            }).join('');
+        }
+        function addAccount(pl){
+            const n=prompt(`Nombre de tu cuenta de ${pl.charAt(0).toUpperCase()+pl.slice(1)}:`);if(!n)return;
+            const f=prompt('Número de seguidores:')||'0';
+            const accs=DB.get('accounts',[]);const ex=accs.findIndex(a=>a.platform===pl);
+            if(ex>=0)accs[ex]={...accs[ex],name:n,followers:parseInt(f)||0};
+            else accs.push({id:Date.now(),platform:pl,name:n,followers:parseInt(f)||0});
+            DB.set('accounts',accs);toast(`Cuenta conectada ✓`,'success');render();
+        }
+        function delAcc(pl){if(!confirm('¿Desconectar?'))return;DB.set('accounts',DB.get('accounts',[]).filter(a=>a.platform!==pl));toast('Desconectada','info');render();}
+
+        // === AJUSTES ===
+        function loadSettings(){const s=DB.get('settings',{name:'Mi Cuenta'});document.getElementById('sName').value=s.name||'';document.getElementById('userName').textContent=s.name||'Mi Cuenta';document.getElementById('userAvatar').textContent=(s.name||'MC').substring(0,2).toUpperCase();}
+        function saveSettings(){const n=document.getElementById('sName').value;DB.set('settings',{name:n});document.getElementById('userName').textContent=n||'Mi Cuenta';document.getElementById('userAvatar').textContent=(n||'MC').substring(0,2).toUpperCase();toast('Guardado ✓','success');}
+        function exportData(){const d={posts:DB.get('posts',[]),accounts:DB.get('accounts',[]),settings:DB.get('settings',{})};const b=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});const l=document.createElement('a');l.href=URL.createObjectURL(b);l.download='socialauto-backup.json';l.click();toast('Backup descargado','success');}
+        function importData(inp){const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{try{const d=JSON.parse(e.target.result);if(d.posts)DB.set('posts',d.posts);if(d.accounts)DB.set('accounts',d.accounts);if(d.settings)DB.set('settings',d.settings);toast('Datos importados ✓','success');render();}catch(err){toast('Error al importar','error');}};r.readAsText(f);}
+
+        // === UTILS ===
+        function fmtN(n){if(n>=1e6)return(n/1e6).toFixed(1)+'M';if(n>=1e3)return(n/1e3).toFixed(1)+'K';return(n||0).toString();}
+        function fmtD(d){const x=new Date(d);return x.toLocaleDateString('es-ES',{day:'numeric',month:'short',year:'numeric'});}
+        function toast(m,t='info'){
+            const c={success:'bg-green-600',info:'bg-brand-600',warning:'bg-amber-600',error:'bg-red-600'};
+            const i={success:'fa-check-circle',info:'fa-info-circle',warning:'fa-exclamation-triangle',error:'fa-times-circle'};
+            const b=document.getElementById('toastBox');const d=document.createElement('div');
+            d.className=`notification-toast ${c[t]} px-4 py-3 rounded-xl flex items-center gap-3 text-sm shadow-lg`;
+            d.innerHTML=`<i class="fas ${i[t]}"></i><span>${m}</span>`;
+            b.appendChild(d);setTimeout(()=>d.remove(),3500);
+        }
+    </script>
+</body>
+</html>
+
